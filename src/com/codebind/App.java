@@ -15,19 +15,19 @@ public class App {
     private JButton button1;
     private JPanel panel1;
     private JTextField textField1;
-    private JList<String> list1;
+    private JList list1;
+    private DefaultListModel listModel;
 
-    public App() {
+    private App() {
 
-        DefaultListModel model = new DefaultListModel();
-        list1 = new JList<> (model);
+        listModel = new DefaultListModel();
 
         button1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
 
-                model.addElement(textField1.getText());
-
+                listModel.addElement(textField1.getText());
+                list1.setModel(listModel);
                 textField1.setText("");
             }
         });
