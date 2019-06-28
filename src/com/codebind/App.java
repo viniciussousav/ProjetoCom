@@ -4,6 +4,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
 public class App {
     private JButton button1;
@@ -12,10 +18,25 @@ public class App {
     private JList list;
     private JScrollPane scrollPane;
     private DefaultListModel listModel;
+    private DataInputStream dataInputStream;
+    private DataOutputStream dataOutputStream;
+    private Socket socketCliente;
 
 
 
     private App() {
+
+        socketCliente = new Socket();
+        InetSocketAddress porta = new InetSocketAddress("localhost",5000);
+        try {
+            socketCliente.connect(porta);
+            dataInputStream = new DataInputStream(socketCliente.getInputStream());
+            dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         listModel = new DefaultListModel();
 
@@ -23,6 +44,10 @@ public class App {
             if(!textField1.getText().isEmpty()){
                 listModel.addElement(textField1.getText());
                 list.setModel(listModel);
+                try{
+                    dataOutputStream.writeUTF(textField1.getText());
+                } catch (Exception e) {
+                }
                 textField1.setText("");
                 //scrollPane.getVerticalScrollBar().setValue( scrollPane.getVerticalScrollBar().getMaximum() +1);
                 SwingUtilities.invokeLater(() -> {
@@ -34,7 +59,6 @@ public class App {
                     scrollPane.getViewport().setViewPosition(new Point(0, height));
 
                 });
-
             }
         });
 
@@ -58,7 +82,30 @@ public class App {
                 }
             }
         });
+
+        Thread receberMensagem = new Thread(() -> {
+            while (true) {
+                try {
+                    String mensagem = dataInputStream.readUTF();
+                    listModel.addElement(mensagem);
+                    list.setModel(listModel);
+                } catch (IOException e) {
+                    break;
+                }
+                SwingUtilities.invokeLater(() -> {
+                    Dimension vpSize = scrollPane.getViewport().getExtentSize();
+                    Dimension logSize = list.getSize();
+                    int height = logSize.height - vpSize.height;
+                    scrollPane.getViewport().setViewPosition(new Point(0, height));
+
+                });
+            }
+        });
+
+        receberMensagem.start();
     }
+
+
 
     public static void main(String[] args){
         JFrame frame = new JFrame("App");
@@ -72,3 +119,4 @@ public class App {
         frame.setVisible(true);
     }
 }
+
