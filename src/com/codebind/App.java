@@ -21,13 +21,13 @@ public class App {
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
     private Socket socketCliente;
-
+    private boolean send;
 
 
     private App() {
-
+        send = false;
         socketCliente = new Socket();
-        InetSocketAddress porta = new InetSocketAddress("localhost",5000);
+        InetSocketAddress porta = new InetSocketAddress("localhost",12345);
         try {
             socketCliente.connect(porta);
             dataInputStream = new DataInputStream(socketCliente.getInputStream());
@@ -40,14 +40,27 @@ public class App {
 
         listModel = new DefaultListModel();
 
+
+
+
+
         button1.addActionListener(actionEvent -> {
             if(!textField1.getText().isEmpty()){
                 listModel.addElement(textField1.getText());
                 list.setModel(listModel);
-                try{
-                    dataOutputStream.writeUTF(textField1.getText());
-                } catch (Exception e) {
-                }
+//                try{
+//                    dataOutputStream.writeUTF(textField1.getText());
+//                } catch (Exception e) {
+//                }
+                String mensagem = textField1.getText();
+                        System.out.println("Passou");
+
+                        try {
+                            dataOutputStream.writeUTF(mensagem);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                send = true;
                 textField1.setText("");
                 //scrollPane.getVerticalScrollBar().setValue( scrollPane.getVerticalScrollBar().getMaximum() +1);
                 SwingUtilities.invokeLater(() -> {
@@ -62,6 +75,9 @@ public class App {
             }
         });
 
+
+
+        /*
         textField1.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -82,6 +98,8 @@ public class App {
                 }
             }
         });
+        */
+
 
         Thread receberMensagem = new Thread(() -> {
             while (true) {
@@ -102,7 +120,30 @@ public class App {
             }
         });
 
+//        Thread enviarMensagem = new Thread(new Runnable()
+//        {
+//            public void run() {
+//
+//                while (true) {
+//                    if(send) {
+//                        String mensagem = textField1.getText();
+//                        System.out.println("Passou");
+//
+//                        try {
+//                            dataOutputStream.writeUTF(mensagem);
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                        send = false;
+//                    }
+//                }
+//
+//
+//            }
+//        });
+
         receberMensagem.start();
+//        enviarMensagem.start();
     }
 
 
