@@ -25,9 +25,10 @@ public class App {
 
 
     private App() {
+
         send = false;
         socketCliente = new Socket();
-        InetSocketAddress porta = new InetSocketAddress("localhost",12345);
+        InetSocketAddress porta = new InetSocketAddress("172.20.4.174",12345);
         try {
             socketCliente.connect(porta);
             dataInputStream = new DataInputStream(socketCliente.getInputStream());
@@ -39,11 +40,7 @@ public class App {
 
 
         listModel = new DefaultListModel();
-
-
-
-
-
+        
         button1.addActionListener(actionEvent -> {
             if(!textField1.getText().isEmpty()){
                 listModel.addElement(textField1.getText());
@@ -60,7 +57,6 @@ public class App {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                send = true;
                 textField1.setText("");
                 //scrollPane.getVerticalScrollBar().setValue( scrollPane.getVerticalScrollBar().getMaximum() +1);
                 SwingUtilities.invokeLater(() -> {
@@ -120,30 +116,7 @@ public class App {
             }
         });
 
-//        Thread enviarMensagem = new Thread(new Runnable()
-//        {
-//            public void run() {
-//
-//                while (true) {
-//                    if(send) {
-//                        String mensagem = textField1.getText();
-//                        System.out.println("Passou");
-//
-//                        try {
-//                            dataOutputStream.writeUTF(mensagem);
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                        send = false;
-//                    }
-//                }
-//
-//
-//            }
-//        });
-
         receberMensagem.start();
-//        enviarMensagem.start();
     }
 
 
