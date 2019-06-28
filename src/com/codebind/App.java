@@ -38,9 +38,8 @@ public class App {
             e.printStackTrace();
         }
 
-
         listModel = new DefaultListModel();
-        
+
         button1.addActionListener(actionEvent -> {
             if(!textField1.getText().isEmpty()){
                 listModel.addElement(textField1.getText());
@@ -73,7 +72,7 @@ public class App {
 
 
 
-        /*
+
         textField1.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -94,7 +93,7 @@ public class App {
                 }
             }
         });
-        */
+
 
 
         Thread receberMensagem = new Thread(() -> {
