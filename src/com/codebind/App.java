@@ -7,9 +7,11 @@ import java.awt.event.KeyEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class App {
     private JButton button1;
@@ -18,20 +20,18 @@ public class App {
     private JList list;
     private JScrollPane scrollPane;
     private DefaultListModel listModel;
-    private DataInputStream dataInputStream;
+    private ObjectInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
     private Socket socketCliente;
-    private boolean send;
 
 
     private App() {
 
-        send = false;
         socketCliente = new Socket();
-        InetSocketAddress porta = new InetSocketAddress("172.20.4.174",12345);
+        InetSocketAddress porta = new InetSocketAddress("localhost",12345);
         try {
             socketCliente.connect(porta);
-            dataInputStream = new DataInputStream(socketCliente.getInputStream());
+            dataInputStream = new ObjectInputStream(socketCliente.getInputStream());
             dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
 
         } catch (IOException e) {
@@ -99,11 +99,12 @@ public class App {
         Thread receberMensagem = new Thread(() -> {
             while (true) {
                 try {
-                    String mensagem = dataInputStream.readUTF();
-                    listModel.addElement(mensagem);
+                    listModel = (DefaultListModel) dataInputStream.readObject();
                     list.setModel(listModel);
                 } catch (IOException e) {
                     break;
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
                 SwingUtilities.invokeLater(() -> {
                     Dimension vpSize = scrollPane.getViewport().getExtentSize();
