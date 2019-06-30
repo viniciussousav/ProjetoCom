@@ -2,6 +2,8 @@ package com.codebind;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.DataInputStream;
@@ -19,11 +21,11 @@ public class App {
     private JTextField textField1;
     private JList list;
     private JScrollPane scrollPane;
-    private DefaultListModel listModel;
-    private ObjectInputStream dataInputStream;
+    private JButton delButton;
+    private DefaultListModel<String> listModel;
+    private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
     private Socket socketCliente;
-
 
     private App() {
 
@@ -31,32 +33,28 @@ public class App {
         InetSocketAddress porta = new InetSocketAddress("localhost",12345);
         try {
             socketCliente.connect(porta);
-            dataInputStream = new ObjectInputStream(socketCliente.getInputStream());
+            dataInputStream = new DataInputStream(socketCliente.getInputStream());
             dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        listModel = new DefaultListModel();
+        listModel = new DefaultListModel<>();
+        listModel.addElement("Bem vindo, por favor insira seu nome...");
+        list.setModel(listModel);
 
+
+        //enviar mensagem clicando botão
         button1.addActionListener(actionEvent -> {
-            if(!textField1.getText().isEmpty()){
-                listModel.addElement(textField1.getText());
-                list.setModel(listModel);
-//                try{
-//                    dataOutputStream.writeUTF(textField1.getText());
-//                } catch (Exception e) {
-//                }
-                String mensagem = textField1.getText();
-                        System.out.println("Passou");
 
-                        try {
-                            dataOutputStream.writeUTF(mensagem);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                textField1.setText("");
+             if(!textField1.getText().isEmpty()){
+                try {
+                    dataOutputStream.writeUTF(textField1.getText());
+                    textField1.setText("");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 //scrollPane.getVerticalScrollBar().setValue( scrollPane.getVerticalScrollBar().getMaximum() +1);
                 SwingUtilities.invokeLater(() -> {
                     Dimension vpSize = scrollPane.getViewport().getExtentSize();
@@ -70,26 +68,43 @@ public class App {
             }
         });
 
+        delButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                int index = list.getSelectedIndex();
 
+                if(listModel.elementAt(index).charAt(0) == 'V' && listModel.elementAt(index).contains("Você: ")){
+                    try {
+                        dataOutputStream.writeUTF("COMMAND=DELETE" + listModel.elementAt(index));
+                    } catch (Exception a){
 
+                    }
+                } else {
+                    listModel.remove(list.getSelectedIndex());
+                }
+            }
+        });
 
+        //enviar mensagem apertando enter
         textField1.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if(e.getKeyCode() == KeyEvent.VK_ENTER && !textField1.getText().isEmpty()) {
-                    listModel.addElement(textField1.getText());
-                    list.setModel(listModel);
-                    textField1.setText("");
-                    //scrollPane.getVerticalScrollBar().setValue( scrollPane.getVerticalScrollBar().getMaximum() +1);
+                    try {
+                        dataOutputStream.writeUTF(textField1.getText());
+                        textField1.setText("");
+                    } catch (IOException a) {
+                            a.printStackTrace();
+                        }
                     SwingUtilities.invokeLater(() -> {
-                        Dimension vpSize = scrollPane.getViewport().getExtentSize();
-                        Dimension logSize = list.getSize();
+                            Dimension vpSize = scrollPane.getViewport().getExtentSize();
+                            Dimension logSize = list.getSize();
 
-                        int height = logSize.height - vpSize.height;
+                            int height = logSize.height - vpSize.height;
 
-                        scrollPane.getViewport().setViewPosition(new Point(0, height));
+                            scrollPane.getViewport().setViewPosition(new Point(0, height));
 
-                    });
+                        });
                 }
             }
         });
@@ -99,27 +114,28 @@ public class App {
         Thread receberMensagem = new Thread(() -> {
             while (true) {
                 try {
-                    listModel = (DefaultListModel) dataInputStream.readObject();
+                    listModel.addElement(dataInputStream.readUTF());
                     list.setModel(listModel);
+                    for (int i = 0; i < listModel.size(); i++){
+                        System.out.print(listModel.elementAt(i) + " ");
+                        System.out.println();
+                    }
                 } catch (IOException e) {
                     break;
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
+
                 SwingUtilities.invokeLater(() -> {
                     Dimension vpSize = scrollPane.getViewport().getExtentSize();
                     Dimension logSize = list.getSize();
                     int height = logSize.height - vpSize.height;
                     scrollPane.getViewport().setViewPosition(new Point(0, height));
-
                 });
             }
         });
 
         receberMensagem.start();
+
     }
-
-
 
     public static void main(String[] args){
         JFrame frame = new JFrame("App");
@@ -130,6 +146,7 @@ public class App {
         frame.setPreferredSize(new Dimension(500,500));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
+        frame.setResizable(false);
         frame.setVisible(true);
     }
 }
