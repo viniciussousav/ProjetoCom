@@ -109,22 +109,19 @@ public class App {
             }
         });
 
-        delButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                int index = list.getSelectedIndex();
+        delButton.addActionListener(actionEvent -> {
+            int index = list.getSelectedIndex();
 
-                if(listModel.elementAt(index).charAt(0) == 'V' && listModel.elementAt(index).contains("Você: ")){
-                    try {
-                        String mensagem = listModel.elementAt(index).replace("Você: ", "");
-                        dataOutputStream.writeUTF("COMMAND=DELETE:" + mensagem);
-                        listModel.remove(list.getSelectedIndex());
-                    } catch (Exception a){
-
-                    }
-                } else {
+            if(listModel.elementAt(index).charAt(0) == 'V' && listModel.elementAt(index).contains("Você: ")){
+                try {
+                    String mensagem = listModel.elementAt(index).replace("Você: ", "");
+                    dataOutputStream.writeUTF("COMMAND=DELETE:" + mensagem);
                     listModel.remove(list.getSelectedIndex());
+                } catch (Exception a){
+
                 }
+            } else {
+                listModel.remove(list.getSelectedIndex());
             }
         });
 
