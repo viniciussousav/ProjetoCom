@@ -40,7 +40,7 @@ public class App {
                         mensagem = mensagem.replace("COMMAND=DELETE:", "" );
                         boolean stop = false;
                         for (int i = 0; i < listModel.size() && !stop; i++) {
-                            if(listModel.elementAt(i).equals(mensagem)) {
+                            if(mensagem.contains(listModel.elementAt(i))) {
                                 listModel.setElementAt("MENSAGEM APAGADA PELO REMETENTE",i);
                                 stop = true;
                             }
@@ -50,6 +50,7 @@ public class App {
                         listModel.addElement("Conexão finalizada...");
                         dataInputStream.close();
                         dataOutputStream.close();
+                        socketCliente.close();
                     } else {
                         listModel.addElement(mensagem);
                     }
@@ -79,6 +80,8 @@ public class App {
                     dataInputStream = new DataInputStream(socketCliente.getInputStream());
                     dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
                     conectado = true;
+                    listModel.removeAllElements();
+                    listModel.addElement("Conexão estabelecida com sucesso...");
                     listModel.addElement("Bem vindo, por favor insira seu nome...");
                     textField1.setText("");
 
@@ -138,9 +141,10 @@ public class App {
                             dataInputStream = new DataInputStream(socketCliente.getInputStream());
                             dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
                             conectado = true;
+                            listModel.removeAllElements();
+                            listModel.addElement("Conexão estabelecida com sucesso...");
                             listModel.addElement("Bem vindo, por favor insira seu nome...");
                             textField1.setText("");
-
                             receberMensagem.start();
                         } catch (IOException a) {
                             listModel.addElement("Servidor não encontrado, insira novamente");

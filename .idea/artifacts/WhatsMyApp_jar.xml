@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="WhatsMyApp:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/WhatsMyApp_jar</output-path>
+    <root id="archive" name="ProjetoCom.jar">
+      <element id="module-output" name="ProjetoCom" />
+    </root>
+  </artifact>
+</component>
