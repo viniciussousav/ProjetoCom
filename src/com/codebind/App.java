@@ -2,10 +2,7 @@ package com.codebind;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,99 +23,35 @@ public class App {
     private DataInputStream dataInputStream;
     private DataOutputStream dataOutputStream;
     private Socket socketCliente;
+    private boolean conectado;
 
     private App() {
-
-        socketCliente = new Socket();
-        InetSocketAddress porta = new InetSocketAddress("localhost",12345);
-        try {
-            socketCliente.connect(porta);
-            dataInputStream = new DataInputStream(socketCliente.getInputStream());
-            dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         listModel = new DefaultListModel<>();
-        listModel.addElement("Bem vindo, por favor insira seu nome...");
         list.setModel(listModel);
-
-
-        //enviar mensagem clicando botão
-        button1.addActionListener(actionEvent -> {
-
-             if(!textField1.getText().isEmpty()){
-                try {
-                    dataOutputStream.writeUTF(textField1.getText());
-                    textField1.setText("");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                //scrollPane.getVerticalScrollBar().setValue( scrollPane.getVerticalScrollBar().getMaximum() +1);
-                SwingUtilities.invokeLater(() -> {
-                    Dimension vpSize = scrollPane.getViewport().getExtentSize();
-                    Dimension logSize = list.getSize();
-
-                    int height = logSize.height - vpSize.height;
-
-                    scrollPane.getViewport().setViewPosition(new Point(0, height));
-
-                });
-            }
-        });
-
-        delButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                int index = list.getSelectedIndex();
-
-                if(listModel.elementAt(index).charAt(0) == 'V' && listModel.elementAt(index).contains("Você: ")){
-                    try {
-                        dataOutputStream.writeUTF("COMMAND=DELETE" + listModel.elementAt(index));
-                    } catch (Exception a){
-
-                    }
-                } else {
-                    listModel.remove(list.getSelectedIndex());
-                }
-            }
-        });
-
-        //enviar mensagem apertando enter
-        textField1.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if(e.getKeyCode() == KeyEvent.VK_ENTER && !textField1.getText().isEmpty()) {
-                    try {
-                        dataOutputStream.writeUTF(textField1.getText());
-                        textField1.setText("");
-                    } catch (IOException a) {
-                            a.printStackTrace();
-                        }
-                    SwingUtilities.invokeLater(() -> {
-                            Dimension vpSize = scrollPane.getViewport().getExtentSize();
-                            Dimension logSize = list.getSize();
-
-                            int height = logSize.height - vpSize.height;
-
-                            scrollPane.getViewport().setViewPosition(new Point(0, height));
-
-                        });
-                }
-            }
-        });
-
-
+        conectado = false;
 
         Thread receberMensagem = new Thread(() -> {
             while (true) {
                 try {
-                    listModel.addElement(dataInputStream.readUTF());
-                    list.setModel(listModel);
-                    for (int i = 0; i < listModel.size(); i++){
-                        System.out.print(listModel.elementAt(i) + " ");
-                        System.out.println();
+
+                    String mensagem = dataInputStream.readUTF();
+
+                    if(mensagem.contains("COMMAND=DELETE:")){
+                        mensagem = mensagem.replace("COMMAND=DELETE:", "" );
+                        boolean stop = false;
+                        for (int i = 0; i < listModel.size() && !stop; i++) {
+                            if(listModel.elementAt(i).equals(mensagem)) {
+                                listModel.setElementAt("MENSAGEM APAGADA PELO REMETENTE",i);
+                                stop = true;
+                            }
+                        }
+                    } else if(mensagem.equals("FINALIZAR()")){
+                        listModel.removeAllElements();
+                        listModel.addElement("Conexão finalizada...");
+                        dataInputStream.close();
+                        dataOutputStream.close();
+                    } else {
+                        listModel.addElement(mensagem);
                     }
                 } catch (IOException e) {
                     break;
@@ -133,8 +66,107 @@ public class App {
             }
         });
 
-        receberMensagem.start();
+        socketCliente = new Socket();
+        listModel.addElement("Digite o ip do servidor: ");
 
+        //enviar mensagem clicando botão
+        button1.addActionListener(actionEvent -> {
+            if(!conectado){
+                try {
+                    InetAddress ip = InetAddress.getByName(textField1.getText());
+                    InetSocketAddress porta = new InetSocketAddress(ip,12345);
+                    socketCliente.connect(porta);
+                    dataInputStream = new DataInputStream(socketCliente.getInputStream());
+                    dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
+                    conectado = true;
+                    listModel.addElement("Bem vindo, por favor insira seu nome...");
+                    textField1.setText("");
+
+                    receberMensagem.start();
+
+
+                } catch (IOException e) {
+                    listModel.addElement("Servidor não encontrado, insira novamente");
+                    e.printStackTrace();
+                }
+
+
+            } else if(!textField1.getText().isEmpty()){
+                try {
+                    dataOutputStream.writeUTF(textField1.getText());
+                    textField1.setText("");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                SwingUtilities.invokeLater(() -> {
+                    Dimension vpSize = scrollPane.getViewport().getExtentSize();
+                    Dimension logSize = list.getSize();
+
+                    int height = logSize.height - vpSize.height;
+
+                    scrollPane.getViewport().setViewPosition(new Point(0, height));
+                });
+            }
+        });
+
+        delButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                int index = list.getSelectedIndex();
+
+                if(listModel.elementAt(index).charAt(0) == 'V' && listModel.elementAt(index).contains("Você: ")){
+                    try {
+                        String mensagem = listModel.elementAt(index).replace("Você: ", "");
+                        dataOutputStream.writeUTF("COMMAND=DELETE:" + mensagem);
+                        listModel.remove(list.getSelectedIndex());
+                    } catch (Exception a){
+
+                    }
+                } else {
+                    listModel.remove(list.getSelectedIndex());
+                }
+            }
+        });
+
+        //enviar mensagem apertando enter
+        textField1.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER && !textField1.getText().isEmpty()) {
+                    if(!conectado){
+                        try {
+                            InetAddress ip = InetAddress.getByName(textField1.getText());
+                            InetSocketAddress porta = new InetSocketAddress(ip,12345);
+                            socketCliente.connect(porta);
+                            dataInputStream = new DataInputStream(socketCliente.getInputStream());
+                            dataOutputStream = new DataOutputStream(socketCliente.getOutputStream());
+                            conectado = true;
+                            listModel.addElement("Bem vindo, por favor insira seu nome...");
+                            textField1.setText("");
+
+                            receberMensagem.start();
+                        } catch (IOException a) {
+                            listModel.addElement("Servidor não encontrado, insira novamente");
+                            //a.printStackTrace();
+                        }
+                    } else {
+                        try {
+                            dataOutputStream.writeUTF(textField1.getText());
+                            textField1.setText("");
+                        } catch (IOException a) {
+                            a.printStackTrace();
+                        }
+                    }
+                    SwingUtilities.invokeLater(() -> {
+                        Dimension vpSize = scrollPane.getViewport().getExtentSize();
+                        Dimension logSize = list.getSize();
+                        int height = logSize.height - vpSize.height;
+                        scrollPane.getViewport().setViewPosition(new Point(0, height));
+
+                    });
+                }
+            }
+        });
     }
 
     public static void main(String[] args){
